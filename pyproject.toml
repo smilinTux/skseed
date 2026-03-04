@@ -52,7 +52,7 @@ Issues = "https://github.com/smilinTux/skseed/issues"
 include = ["skseed*"]
 
 [tool.setuptools.package-data]
-skseed = ["data/*.json"]
+skseed = ["data/*.json", "data/*.yaml"]
 
 [tool.black]
 line-length = 99

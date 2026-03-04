@@ -190,6 +190,175 @@ def alignment_report(
     }
 
 
+# ── New entrypoints (collider extras) ────────────────────────────────────────
+
+
+def batch_collide(propositions: list[str], context: str = "") -> dict[str, Any]:
+    """Run multiple propositions through the collider in sequence.
+
+    Args:
+        propositions: List of claims/arguments to analyze.
+        context: Shared domain context for all propositions.
+
+    Returns:
+        Dict with results list and aggregate summary.
+    """
+    collider = _get_collider()
+    results = collider.batch_collide(propositions, context=context)
+    return {
+        "results": [r.model_dump() for r in results],
+        "count": len(results),
+        "avg_coherence": (
+            sum(r.coherence_score for r in results) / len(results) if results else 0.0
+        ),
+    }
+
+
+def cross_reference(results: list[dict[str, Any]]) -> dict[str, Any]:
+    """Find invariant truths shared across multiple prior collider results.
+
+    Args:
+        results: List of SteelManResult dicts from previous collide calls.
+
+    Returns:
+        Dict summarizing cross-cutting invariants.
+    """
+    from .models import SteelManResult
+
+    collider = _get_collider()
+    result_objs = [SteelManResult(**r) for r in results]
+    return collider.cross_reference(result_objs)
+
+
+def verify_soul(identity_claims: list[str]) -> dict[str, Any]:
+    """Verify identity claims through the steel man collider.
+
+    Args:
+        identity_claims: List of identity statements to verify.
+
+    Returns:
+        SteelManResult dict representing identity coherence.
+    """
+    collider = _get_collider()
+    result = collider.verify_soul(identity_claims)
+    return result.model_dump()
+
+
+def truth_score_memory(memory_content: str) -> dict[str, Any]:
+    """Score a memory's content for truth alignment before promotion.
+
+    Args:
+        memory_content: The full text content of a memory entry.
+
+    Returns:
+        SteelManResult dict with coherence score and truth grade.
+    """
+    collider = _get_collider()
+    result = collider.truth_score_memory(memory_content)
+    return result.model_dump()
+
+
+def audit_beliefs(beliefs: list[str], domain: str = "") -> dict[str, Any]:
+    """Audit a cluster of related beliefs for internal consistency.
+
+    Args:
+        beliefs: List of belief statements in the same domain.
+        domain: Domain label for context.
+
+    Returns:
+        Audit result dict with cross-conflicts and coherence analysis.
+    """
+    collider = _get_collider()
+    return collider.audit_beliefs(beliefs, domain=domain)
+
+
+# ── Philosopher extras ────────────────────────────────────────────────────────
+
+
+def continue_session(session: dict[str, Any], user_input: str) -> dict[str, Any]:
+    """Continue an existing philosopher session with new input.
+
+    Args:
+        session: PhilosopherSession dict from a previous philosopher call.
+        user_input: The next message or question to continue the dialogue.
+
+    Returns:
+        Updated PhilosopherSession dict with the new exchange appended.
+    """
+    from .models import PhilosopherSession
+
+    collider = _get_collider()
+    phil = Philosopher(collider=collider)
+    session_obj = PhilosopherSession(**session)
+    updated = phil.continue_session(session_obj, user_input)
+    return updated.model_dump()
+
+
+def collide_insight(session: dict[str, Any], insight: str) -> dict[str, Any]:
+    """Run a specific insight from a philosopher session through the full collider.
+
+    Args:
+        session: PhilosopherSession dict (used for context).
+        insight: The specific insight or claim to collide.
+
+    Returns:
+        SteelManResult dict.
+    """
+    from .models import PhilosopherSession
+
+    collider = _get_collider()
+    phil = Philosopher(collider=collider)
+    session_obj = PhilosopherSession(**session)
+    result = phil.collide_insight(session_obj, insight)
+    return result.model_dump()
+
+
+def session_summary(session: dict[str, Any]) -> dict[str, Any]:
+    """Generate a human-readable summary of a philosopher session.
+
+    Args:
+        session: PhilosopherSession dict to summarize.
+
+    Returns:
+        Dict with summary text and key metadata.
+    """
+    from .models import PhilosopherSession
+
+    collider = _get_collider()
+    phil = Philosopher(collider=collider)
+    session_obj = PhilosopherSession(**session)
+    summary_text = phil.session_summary(session_obj)
+    return {
+        "summary": summary_text,
+        "topic": session_obj.topic,
+        "mode": session_obj.mode.value,
+        "exchange_count": len(session_obj.exchanges),
+        "insight_count": len(session_obj.insights),
+        "invariant_count": len(session_obj.invariants),
+    }
+
+
+# ── Alignment extras ──────────────────────────────────────────────────────────
+
+
+def coherence_trend(domain: str = "", lookback_days: int = 7) -> dict[str, Any]:
+    """Analyze truth alignment coherence trends over time.
+
+    Args:
+        domain: Filter by domain (optional).
+        lookback_days: How many days back to analyze (default 7, max 30).
+
+    Returns:
+        Dict with coherence trend, direction, and recommended anchor value.
+    """
+    store = AlignmentStore()
+    days = max(1, min(30, lookback_days))
+    return store.coherence_trend(domain=domain or None, lookback_days=days)
+
+
+# ── Memory loader ─────────────────────────────────────────────────────────────
+
+
 def _load_memories(domain: str = "") -> list[dict[str, Any]]:
     """Load memories from skmemory for audit.
 
