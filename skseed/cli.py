@@ -16,7 +16,6 @@ Commands:
 
 from __future__ import annotations
 
-import json
 import sys
 
 import click
@@ -27,11 +26,9 @@ from .collider import Collider
 from .framework import get_default_framework, install_seed_framework
 from .models import (
     AlignmentStatus,
-    AuditFrequency,
     Belief,
     BeliefSource,
     PhilosopherMode,
-    SeedConfig,
 )
 from .philosopher import Philosopher
 
@@ -92,7 +89,7 @@ def batch(propositions: tuple[str, ...], context: str):
     click.echo(f"Collided {len(results)} propositions\n")
     for r in results:
         click.echo(f"  [{r.truth_grade.value}] {r.proposition[:60]}")
-    click.echo(f"\nCross-reference:")
+    click.echo("\nCross-reference:")
     click.echo(f"  Universal invariants: {len(xref.get('universal_invariants', {}))}")
     click.echo(f"  Total fragments: {xref.get('total_fragments', 0)}")
     click.echo(f"  Cross-coherence: {xref.get('cross_coherence', 0):.2f}")

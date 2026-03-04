@@ -14,9 +14,8 @@ for truth alignment over time.
 
 from __future__ import annotations
 
-from typing import Optional
 
-from .collider import Collider, LLMCallback
+from .collider import Collider
 from .models import PhilosopherMode, PhilosopherSession, SteelManResult
 
 
@@ -78,8 +77,8 @@ class Philosopher:
         Returns:
             Updated session with new exchange.
         """
-        # Build context from previous exchanges
-        context = self._build_context(session)
+        # Build context from previous exchanges (used implicitly by collider)
+        self._build_context(session)
         continuation_topic = f"{session.topic} — continuing: {user_input}"
 
         response = self.collider.philosopher(continuation_topic, session.mode.value)

@@ -11,13 +11,13 @@ import logging
 from typing import Any
 
 from .alignment import AlignmentStore
-
-logger = logging.getLogger(__name__)
 from .audit import Auditor
 from .collider import Collider
 from .llm import auto_callback
 from .models import Belief, BeliefSource, PhilosopherMode
 from .philosopher import Philosopher
+
+logger = logging.getLogger(__name__)
 
 
 def _get_collider() -> Collider:

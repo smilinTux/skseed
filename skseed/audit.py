@@ -15,10 +15,10 @@ Configurable frequency: boot ritual (default), periodic, on-demand, disabled.
 from __future__ import annotations
 
 import re
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from .alignment import AlignmentStore
-from .collider import Collider, LLMCallback
+from .collider import Collider
 from .models import (
     AlignmentStatus,
     AuditReport,
@@ -27,7 +27,6 @@ from .models import (
     ConceptCluster,
     MisalignmentType,
     SeedConfig,
-    TruthGrade,
 )
 
 # Domains we look for when extracting beliefs from memories
@@ -98,7 +97,6 @@ class Auditor:
 
         for mem in memories:
             content = mem.get("content", "")
-            title = mem.get("title", "")
             tags = mem.get("tags", [])
             memory_id = mem.get("id", "")
 
