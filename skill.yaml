@@ -1,0 +1,147 @@
+name: seed-collider
+version: 0.1.0
+description: >
+  Sovereign Logic Kernel — Aristotelian entelechy engine for truth alignment.
+  Steel man collider, memory audit, philosopher mode, and three-way belief tracking.
+  Based on the Neuresthetics seed framework.
+author:
+  name: smilinTux Team
+
+primitives:
+  - capability
+  - knowledge
+  - hook
+
+knowledge:
+  - path: SEED.md
+    description: Seed framework documentation, usage guide, and philosophy
+    auto_load: false
+    mime_type: text/markdown
+
+tools:
+  - name: collide
+    description: >
+      Run a proposition through the 6-stage steel man collider.
+      Returns steel-man, inversion, collision fragments, invariants,
+      coherence score, and truth grade.
+    entrypoint: skseed.skill:collide
+    input_schema:
+      type: object
+      properties:
+        proposition:
+          type: string
+          description: The claim/argument/idea to analyze
+        context:
+          type: string
+          description: Domain context (e.g., security, ethics, identity)
+          default: ""
+      required: [proposition]
+    timeout_s: 120
+
+  - name: audit
+    description: >
+      Scan memories for logic/truth misalignment. Extracts beliefs,
+      clusters by domain, runs through collider, flags contradictions.
+      Separates truth misalignments from moral misalignments.
+    entrypoint: skseed.skill:audit
+    input_schema:
+      type: object
+      properties:
+        domain:
+          type: string
+          description: Filter by topic domain (optional)
+        triggered_by:
+          type: string
+          description: What triggered this audit
+          default: skill
+      required: []
+    timeout_s: 300
+
+  - name: philosopher
+    description: >
+      Enter philosopher mode for brainstorming. Modes: socratic (challenge
+      assumptions), dialectic (thesis/antithesis/synthesis), adversarial
+      (maximum counter-arguments), collaborative (steel-man only).
+    entrypoint: skseed.skill:philosopher
+    input_schema:
+      type: object
+      properties:
+        topic:
+          type: string
+          description: The subject to explore
+        mode:
+          type: string
+          enum: [socratic, dialectic, adversarial, collaborative]
+          description: Brainstorming mode
+          default: dialectic
+      required: [topic]
+    timeout_s: 120
+
+  - name: truth_check
+    description: >
+      Check if a belief is truth-aligned. Runs through the collider
+      and records the result in the alignment store.
+    entrypoint: skseed.skill:truth_check
+    input_schema:
+      type: object
+      properties:
+        belief:
+          type: string
+          description: The belief statement to check
+        source:
+          type: string
+          enum: [human, model]
+          description: Who holds this belief
+          default: model
+        domain:
+          type: string
+          description: Topic domain
+          default: general
+      required: [belief]
+    timeout_s: 120
+
+  - name: alignment_report
+    description: >
+      Show current truth alignment status across all three belief
+      stores (human, model, collider). Lists open misalignment
+      issues and coherence trends.
+    entrypoint: skseed.skill:alignment_report
+    input_schema:
+      type: object
+      properties:
+        domain:
+          type: string
+          description: Filter by domain (optional)
+      required: []
+    timeout_s: 30
+
+hooks:
+  - event: on_memory_stored
+    entrypoint: skseed.hooks:on_memory_check
+    description: >
+      Optionally truth-check new memories on storage. Only runs if
+      the memory contains belief-like content. Configurable via
+      skseed config.
+    async: true
+
+  - event: on_boot
+    entrypoint: skseed.hooks:on_boot_audit
+    description: >
+      Run a logic audit during boot ritual if configured.
+      Default: enabled. Disable with skseed config set audit_on_boot false.
+    async: true
+
+dependencies:
+  - name: pydantic
+    version: ">=2.0"
+    type: python
+  - name: click
+    version: ">=8.0"
+    type: python
+  - name: pyyaml
+    version: ">=6.0"
+    type: python
+  - name: skmemory
+    version: ">=0.5.0"
+    type: skill
+    optional: true

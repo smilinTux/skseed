@@ -1,0 +1,54 @@
+{
+  "name": "@smilintux/skseed",
+  "version": "0.1.0",
+  "description": "Sovereign Logic Kernel — Aristotelian entelechy engine for truth alignment. Neuresthetics Seed Framework as a JS/TS module.",
+  "author": "smilinTux.org <hello@smilintux.org>",
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/smilinTux/skseed#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smilinTux/skseed.git"
+  },
+  "bugs": {
+    "url": "https://github.com/smilinTux/skseed/issues"
+  },
+  "keywords": [
+    "skseed",
+    "seed-framework",
+    "neuresthetics",
+    "steel-man",
+    "truth-alignment",
+    "sovereign-ai",
+    "logic-kernel",
+    "decentralized-identity",
+    "mcp"
+  ],
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./seed": "./skseed/data/seed.json",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "skseed/data/seed.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
