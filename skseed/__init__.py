@@ -26,7 +26,7 @@ Usage:
     print(result.summary())
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 from .alignment import AlignmentStore
 from .audit import Auditor

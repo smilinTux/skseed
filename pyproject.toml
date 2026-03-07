@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "skseed"
-version = "0.1.1"
+version = "0.1.2"
 description = "Sovereign Logic Kernel — Aristotelian entelechy engine for truth alignment"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
