@@ -1,8 +1,11 @@
 {
   "name": "@smilintux/skseed",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Sovereign Logic Kernel — Aristotelian entelechy engine for truth alignment. Neuresthetics Seed Framework as a JS/TS module.",
   "author": "smilinTux.org <hello@smilintux.org>",
+  "contributors": [
+    "neuresthetics (https://github.com/neuresthetics)"
+  ],
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/smilinTux/skseed#readme",
   "repository": {

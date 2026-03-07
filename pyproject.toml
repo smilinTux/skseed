@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "skseed"
-version = "0.1.0"
+version = "0.1.1"
 description = "Sovereign Logic Kernel — Aristotelian entelechy engine for truth alignment"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
 requires-python = ">=3.10"
 authors = [
     {name = "smilinTux.org", email = "hello@smilintux.org"},
+    {name = "neuresthetics"},
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -47,6 +48,7 @@ skseed = "skseed.cli:main"
 Homepage = "https://github.com/smilinTux/skseed"
 Repository = "https://github.com/smilinTux/skseed"
 Issues = "https://github.com/smilinTux/skseed/issues"
+"Original Seed Framework" = "https://github.com/neuresthetics/seed"
 
 [tool.setuptools.packages.find]
 include = ["skseed*"]

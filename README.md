@@ -76,6 +76,12 @@ session = phil.start_session("What is time?", mode=PhilosopherMode.SOCRATIC)
 print(phil.session_summary(session))
 ```
 
+## Attribution
+
+SKSeed is built upon and inspired by the **[Seed](https://github.com/neuresthetics/seed)** recursive cognitive kernel created by **[neuresthetics](https://github.com/neuresthetics)**. The original Seed framework introduced the Aristotelian entelechy prompt — a declarative JSON program that functions as a steel-man generator, logic-gate interpreter, and self-refining metaprogram. SKSeed extends this foundation with CLI tooling, MCP integration, belief auditing, and the skcapstone sovereign agent ecosystem.
+
+Props and gratitude to neuresthetics for the original idea and code that made this possible.
+
 ## License
 
 AGPL-3.0 — see [LICENSE](LICENSE).
