@@ -1,0 +1,10 @@
+{
+  "id": "skseed",
+  "name": "SKSeed",
+  "description": "Sovereign Logic Kernel — steel man collider, truth alignment, memory audit, and philosopher mode for epistemic rigor.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

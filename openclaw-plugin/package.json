@@ -1,0 +1,13 @@
+{
+  "name": "@smilintux/openclaw-plugin-skseed",
+  "version": "0.1.2",
+  "description": "SKSeed OpenClaw plugin — steel man collider, truth alignment, memory audit",
+  "main": "src/index.ts",
+  "type": "module",
+  "license": "GPL-3.0-or-later",
+  "author": "smilinTux <hello@smilintux.org>",
+  "openclaw": {
+    "plugin": true,
+    "id": "skseed"
+  }
+}
