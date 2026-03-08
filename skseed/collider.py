@@ -359,21 +359,16 @@ class Collider:
         except (json.JSONDecodeError, TypeError):
             pass
 
-        # Try extracting from ```json ... ``` blocks
-        if "```json" in text:
-            start = text.index("```json") + 7
-            end = text.index("```", start)
-            try:
-                return json.loads(text[start:end].strip())
-            except (json.JSONDecodeError, ValueError):
-                pass
-
-        # Try extracting from ``` ... ``` blocks
+        # Try extracting from ```json ... ``` or ``` ... ``` blocks
         if "```" in text:
             parts = text.split("```")
-            for i in range(1, len(parts), 2):
+            for i in range(1, len(parts)):
+                chunk = parts[i].strip()
+                # Strip leading language tag (e.g. "json\n{...}")
+                if chunk.startswith("json"):
+                    chunk = chunk[4:].strip()
                 try:
-                    return json.loads(parts[i].strip())
+                    return json.loads(chunk)
                 except (json.JSONDecodeError, ValueError):
                     continue
 
