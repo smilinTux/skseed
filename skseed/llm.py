@@ -12,6 +12,7 @@ This module provides ready-made callbacks for common setups:
   - ollama_callback: Uses a local Ollama instance
   - grok_callback: Uses xAI Grok via OpenAI-compatible API
   - kimi_callback: Uses Moonshot Kimi via OpenAI-compatible API
+  - minimax_callback: Uses MiniMax via OpenAI-compatible API
   - nvidia_callback: Uses NVIDIA NIM via OpenAI-compatible API
   - passthrough_callback: Returns the prompt as-is (for debugging/testing)
 
@@ -331,6 +332,26 @@ def kimi_callback(
     )
 
 
+def minimax_callback(
+    model: str = "MiniMax-Text-01",
+    api_key: Optional[str] = None,
+) -> LLMCallback:
+    """Create a callback that uses MiniMax via OpenAI-compatible API.
+
+    Args:
+        model: MiniMax model ID (e.g. "MiniMax-Text-01", "abab6.5s-chat").
+        api_key: MiniMax API key. Falls back to MINIMAX_API_KEY env var.
+
+    Returns:
+        LLM callback function.
+    """
+    return openai_callback(
+        model=model,
+        api_key=api_key or os.environ.get("MINIMAX_API_KEY"),
+        base_url="https://api.minimaxi.chat/v1",
+    )
+
+
 def nvidia_callback(
     model: str = "meta/llama-3.1-70b-instruct",
     api_key: Optional[str] = None,
@@ -442,10 +463,11 @@ def auto_callback() -> Optional[LLMCallback]:
       2. ANTHROPIC_API_KEY → anthropic_callback
       3. XAI_API_KEY → grok_callback
       4. MOONSHOT_API_KEY → kimi_callback
-      5. NVIDIA_API_KEY → nvidia_callback
-      6. OPENAI_API_KEY → openai_callback
-      7. Ollama running locally → ollama_callback
-      8. None (no LLM available)
+      5. MINIMAX_API_KEY → minimax_callback
+      6. NVIDIA_API_KEY → nvidia_callback
+      7. OPENAI_API_KEY → openai_callback
+      8. Ollama running locally → ollama_callback
+      9. None (no LLM available)
 
     Returns:
         The best available callback, or None.
@@ -470,6 +492,12 @@ def auto_callback() -> Optional[LLMCallback]:
     if os.environ.get("MOONSHOT_API_KEY"):
         try:
             return kimi_callback()
+        except ImportError:
+            pass
+
+    if os.environ.get("MINIMAX_API_KEY"):
+        try:
+            return minimax_callback()
         except ImportError:
             pass
 

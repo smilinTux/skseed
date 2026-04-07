@@ -26,7 +26,7 @@ Usage:
     print(result.summary())
 """
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 from .alignment import AlignmentStore
 from .audit import Auditor
@@ -46,7 +46,7 @@ from .models import (
     SteelManResult,
     TruthGrade,
 )
-from .llm import anthropic_callback, auto_callback, ollama_callback, openai_callback, passthrough_callback
+from .llm import anthropic_callback, auto_callback, minimax_callback, ollama_callback, openai_callback, passthrough_callback
 from .philosopher import Philosopher
 
 __all__ = [
@@ -71,6 +71,7 @@ __all__ = [
     "auto_callback",
     "get_default_framework",
     "load_seed_framework",
+    "minimax_callback",
     "ollama_callback",
     "openai_callback",
     "passthrough_callback",
