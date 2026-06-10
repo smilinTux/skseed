@@ -120,6 +120,30 @@ flowchart TD
 
 ## Attribution
 
+## Integration modes
+
+SKSeed uses the **default-on-by-presence** pattern from the
+[skcapstone integration ADR](https://github.com/smilinTux/skcapstone/blob/main/docs/ADR-optional-integration-backbone.md).
+
+| Mode | When | Behaviour |
+|---|---|---|
+| **Integrated** | `skcapstone` installed | Alerts (misalignment findings, audit errors) routed to `skseed.<severity>` on the sk-alert bus; belief-audit job registered in fleet scheduler |
+| **Standalone** | `skcapstone` absent | Native structured logging; caller is responsible for scheduling `skseed audit` (skseed is a pure kernel library with no daemon) |
+| **Forced standalone** | `SK_STANDALONE=1` | Native mode even when `skcapstone` is installed |
+
+**Enable integrated mode:**
+```bash
+pip install "skseed[skcapstone]"
+```
+
+**`~/.skcapstone/` filesystem contract (written when integrated):**
+- `config/jobs.d/skseed_audit.yaml` — belief-audit job registered with fleet scheduler (runs `skseed audit --source skmemory` every 24h)
+- `registry/skseed.json` — service discovery entry
+
+**`SK_STANDALONE=1`** forces native mode end-to-end (useful for CI and isolated deployments).
+
+---
+
 SKSeed is built upon and inspired by the **[Seed](https://github.com/neuresthetics/seed)** recursive cognitive kernel created by **[neuresthetics](https://github.com/neuresthetics)**. The original Seed framework introduced the Aristotelian entelechy prompt — a declarative JSON program that functions as a steel-man generator, logic-gate interpreter, and self-refining metaprogram. SKSeed extends this foundation with CLI tooling, MCP integration, belief auditing, and the skcapstone sovereign agent ecosystem.
 
 Props and gratitude to neuresthetics for the original idea and code that made this possible.

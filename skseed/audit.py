@@ -14,11 +14,13 @@ Configurable frequency: boot ritual (default), periodic, on-demand, disabled.
 
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any, Optional
 
 from .alignment import AlignmentStore
 from .collider import Collider
+from .integration import alert as _alert
 from .models import (
     AlignmentStatus,
     AuditReport,
@@ -30,6 +32,8 @@ from .models import (
 )
 
 # Domains we look for when extracting beliefs from memories
+logger = logging.getLogger("skseed.audit")
+
 BELIEF_DOMAINS = [
     "identity",
     "ethics",
@@ -225,7 +229,16 @@ class Auditor:
         # Audit each cluster
         audited_clusters = []
         for cluster in clusters:
-            audited = self.audit_cluster(cluster)
+            try:
+                audited = self.audit_cluster(cluster)
+            except Exception as exc:
+                logger.error("audit_cluster failed for domain %s: %s", cluster.domain, exc)
+                _alert(
+                    "audit_cluster_failed",
+                    {"domain": cluster.domain, "message": str(exc), "triggered_by": triggered_by},
+                    level="error",
+                )
+                audited = cluster  # keep partial results
             audited_clusters.append(audited)
 
         # Categorize results
@@ -289,6 +302,29 @@ class Auditor:
                 "alignment_threshold": self.config.alignment_threshold,
             },
         )
+
+        # Emit a warn-level alert when misalignments are found
+        if misaligned:
+            _alert(
+                "audit_misalignment_found",
+                {
+                    "misaligned_count": len(misaligned),
+                    "truth_issues": len(truth_issues),
+                    "moral_issues": len(moral_issues),
+                    "triggered_by": triggered_by,
+                },
+                level="warn",
+            )
+        else:
+            _alert(
+                "audit_complete",
+                {
+                    "total_scanned": len(all_beliefs),
+                    "aligned_count": len(aligned),
+                    "triggered_by": triggered_by,
+                },
+                level="info",
+            )
 
         return report
 
