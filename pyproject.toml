@@ -1,10 +1,14 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=68.0", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "skseed"
-version = "0.1.7"
+# Derived from the git tag by setuptools-scm, NOT written here. A hardcoded
+# version here equals the newest release on PyPI, so the next tag rebuilds an
+# already-published version and upload fails with a bare 400. That is exactly
+# how sksecurity lost two months of releases.
+dynamic = ["version"]
 description = "Sovereign Logic Kernel — Aristotelian entelechy engine for truth alignment"
 readme = "README.md"
 license = {text = "GPL-3.0-or-later"}
@@ -63,3 +67,9 @@ target-version = ["py310"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.setuptools_scm]
+# Generated at build time and gitignored: it is rewritten on every build, so
+# a committed copy only goes stale.
+version_file = "skseed/_version.py"
+fallback_version = "0.0.0+unknown"
