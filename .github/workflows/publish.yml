@@ -16,6 +16,12 @@ jobs:
         python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          # setuptools-scm derives the version from the git tag. Without the
+          # full history and tags a checkout resolves to 0.0.1.dev...+unknown,
+          # which makes `--version` meaningless and any version assertion fail.
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -28,6 +34,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # setuptools-scm derives the version from the git tag. Without the
+          # full history and tags a checkout resolves to 0.0.1.dev...+unknown,
+          # which makes `--version` meaningless and any version assertion fail.
+          fetch-depth: 0
+          fetch-tags: true
+        with:
+          # setuptools-scm derives the version from the git tag, so full history
+          # and tags must be present. A shallow checkout falls back to
+          # 0.0.0+unknown, and PyPI rejects a local version segment.
+          fetch-depth: 0
+          fetch-tags: true
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"

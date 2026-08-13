@@ -26,7 +26,9 @@ Usage:
     print(result.summary())
 """
 
-__version__ = "0.1.3"
+from ._ver import detect_version
+
+__version__ = detect_version()
 
 from .alignment import AlignmentStore
 from .audit import Auditor
