@@ -387,6 +387,8 @@ def _load_memories(domain: str = "") -> list[dict[str, Any]]:
     except ImportError:
         logger.warning("skmemory not installed — audit will run without memories. Install with: pip install skmemory")
         return []
-    except Exception as exc:
+    # Broad on purpose: skmemory is optional and its failure modes are its own;
+    # the audit proceeds without memories rather than failing.
+    except Exception as exc:  # noqa: BLE001
         logger.warning("Failed to load memories from skmemory: %s", exc)
         return []

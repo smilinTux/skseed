@@ -75,7 +75,8 @@ def on_memory_check(memory_id: str = "", content: str = "", **kwargs: Any) -> di
             "truth_grade": result.get("collider_result", {}).get("truth_grade"),
             "coherence_score": result.get("collider_result", {}).get("coherence_score"),
         }
-    except Exception as exc:
+    # Broad on purpose: a truth-check failure must not block the memory write.
+    except Exception as exc:  # noqa: BLE001
         logger.warning("Memory truth-check failed for %s: %s", memory_id, exc)
         return {
             "checked": False,
@@ -119,7 +120,8 @@ def on_boot_audit(**kwargs: Any) -> dict[str, Any]:
             "moral_issues": len(report.get("moral_misalignments", [])),
             "recommendations": report.get("recommendations", []),
         }
-    except Exception as exc:
+    # Broad on purpose: a failed boot audit must not stop the agent booting.
+    except Exception as exc:  # noqa: BLE001
         logger.warning("Boot audit failed: %s", exc)
         return {
             "ran": False,

@@ -51,7 +51,6 @@ def main():
     Aristotelian entelechy engine for truth alignment.
     Based on the Neuresthetics seed framework.
     """
-    pass
 
 
 # ── Collide ────────────────────────────────────────────────
@@ -164,7 +163,6 @@ def philosopher(topic: str, mode: str, json_output: bool):
 @main.group()
 def alignment():
     """Truth alignment tracking and management."""
-    pass
 
 
 @alignment.command("status")
@@ -308,7 +306,6 @@ def alignment_ledger(limit: int):
 @main.group()
 def config():
     """Configuration management."""
-    pass
 
 
 @config.command("show")
@@ -346,7 +343,9 @@ def config_set(key: str, value: str):
         setattr(cfg, key, typed_value)
         store.save_config(cfg)
         click.echo(f"Set {key} = {typed_value}")
-    except Exception as e:
+    # Broad on purpose: a CLI top-level handler turns any failure into a
+    # message instead of a traceback.
+    except Exception as e:  # noqa: BLE001
         click.echo(f"Error: {e}")
 
 
@@ -360,7 +359,8 @@ def install(source_path: str):
     try:
         path = install_seed_framework(source_path)
         click.echo(f"Installed seed framework to: {path}")
-    except Exception as e:
+    # Broad on purpose: CLI top-level handler; exits non-zero below.
+    except Exception as e:  # noqa: BLE001
         click.echo(f"Error: {e}", err=True)
         sys.exit(1)
 
@@ -390,7 +390,8 @@ def _load_memories(source: str, domain: str | None = None) -> list[dict]:
             err=True,
         )
         return []
-    except Exception as e:
+    # Broad on purpose: skmemory is optional; report and continue with none.
+    except Exception as e:  # noqa: BLE001
         click.echo(f"Error loading memories: {e}", err=True)
         return []
 

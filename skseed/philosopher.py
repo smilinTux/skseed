@@ -14,7 +14,6 @@ for truth alignment over time.
 
 from __future__ import annotations
 
-
 from .collider import Collider
 from .models import PhilosopherMode, PhilosopherSession, SteelManResult
 

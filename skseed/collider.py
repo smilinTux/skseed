@@ -19,7 +19,8 @@ Stages:
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from .framework import SeedFramework, get_default_framework
 from .models import SteelManResult, TruthGrade
@@ -39,8 +40,8 @@ class Collider:
 
     def __init__(
         self,
-        framework: Optional[SeedFramework] = None,
-        llm: Optional[LLMCallback] = None,
+        framework: SeedFramework | None = None,
+        llm: LLMCallback | None = None,
     ) -> None:
         self.framework = framework or get_default_framework()
         self._llm = llm
@@ -342,7 +343,7 @@ class Collider:
         }
 
     @staticmethod
-    def _extract_json(text: str) -> Optional[dict[str, Any]]:
+    def _extract_json(text: str) -> dict[str, Any] | None:
         """Extract JSON from an LLM response.
 
         Handles responses that wrap JSON in markdown code blocks.

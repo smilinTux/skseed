@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any, Optional
+from typing import Any
 
 from .alignment import AlignmentStore
 from .collider import Collider
@@ -73,8 +73,8 @@ class Auditor:
     def __init__(
         self,
         collider: Collider,
-        alignment_store: Optional[AlignmentStore] = None,
-        config: Optional[SeedConfig] = None,
+        alignment_store: AlignmentStore | None = None,
+        config: SeedConfig | None = None,
     ) -> None:
         self.collider = collider
         self.store = alignment_store or AlignmentStore()
@@ -200,7 +200,7 @@ class Auditor:
     def run_audit(
         self,
         memories: list[dict[str, Any]],
-        human_beliefs: Optional[list[dict[str, Any]]] = None,
+        human_beliefs: list[dict[str, Any]] | None = None,
         triggered_by: str = "manual",
     ) -> AuditReport:
         """Run a full logic audit across memories.
@@ -231,7 +231,9 @@ class Auditor:
         for cluster in clusters:
             try:
                 audited = self.audit_cluster(cluster)
-            except Exception as exc:
+            # Broad on purpose: one unauditable cluster must not abort the run.
+            # It is logged AND alerted below, so nothing is swallowed silently.
+            except Exception as exc:  # noqa: BLE001
                 logger.error("audit_cluster failed for domain %s: %s", cluster.domain, exc)
                 _alert(
                     "audit_cluster_failed",
@@ -354,7 +356,7 @@ class Auditor:
         }
 
         # Check tags first
-        tag_set = set(t.lower() for t in tags)
+        tag_set = {t.lower() for t in tags}
         for domain, keywords in domain_keywords.items():
             if domain in tag_set:
                 return domain
