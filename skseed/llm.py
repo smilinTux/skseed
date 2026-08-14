@@ -31,7 +31,9 @@ Usage:
 from __future__ import annotations
 
 import os
-from typing import Any, Callable, Optional, Union
+import urllib.parse
+from collections.abc import Callable
+from typing import Any
 
 LLMCallback = Callable[[str], str]
 
@@ -44,7 +46,7 @@ def _is_adapted_prompt(prompt: Any) -> bool:
 def anthropic_callback(
     model: str = "claude-sonnet-4-20250514",
     max_tokens: int = 4096,
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
 ) -> LLMCallback:
     """Create a callback that uses the Anthropic (Claude) API.
 
@@ -60,7 +62,7 @@ def anthropic_callback(
     Returns:
         LLM callback function.
     """
-    def _call(prompt: Union[str, Any]) -> str:
+    def _call(prompt: str | Any) -> str:
         try:
             import anthropic
         except ImportError:
@@ -112,8 +114,8 @@ def anthropic_callback(
 def openai_callback(
     model: str = "gpt-4o",
     max_tokens: int = 4096,
-    api_key: Optional[str] = None,
-    base_url: Optional[str] = None,
+    api_key: str | None = None,
+    base_url: str | None = None,
 ) -> LLMCallback:
     """Create a callback that uses the OpenAI API (or compatible).
 
@@ -131,7 +133,7 @@ def openai_callback(
     Returns:
         LLM callback function.
     """
-    def _call(prompt: Union[str, Any]) -> str:
+    def _call(prompt: str | Any) -> str:
         try:
             import openai
         except ImportError:
@@ -176,7 +178,7 @@ def openai_callback(
 
 def ollama_callback(
     model: str = "llama3.1",
-    base_url: Optional[str] = None,
+    base_url: str | None = None,
     max_retries: int = 1,
 ) -> LLMCallback:
     """Create a callback that uses a local Ollama instance.
@@ -202,8 +204,17 @@ def ollama_callback(
     resolved_url = base_url or os.environ.get("OLLAMA_HOST", "http://localhost:11434")
     # Strip trailing slash to avoid double-slash in endpoint paths
     resolved_url = resolved_url.rstrip("/")
+    # base_url/OLLAMA_HOST reach urlopen(), which speaks file:// and ftp:// as
+    # happily as http://. Reject anything else up front so a stray env var
+    # cannot turn an inference call into a local file read.
+    _scheme = urllib.parse.urlparse(resolved_url).scheme
+    if _scheme not in ("http", "https"):
+        raise ValueError(
+            f"Ollama base URL must be http:// or https://, got {_scheme or 'no'} scheme: "
+            f"{resolved_url!r}"
+        )
 
-    def _call(prompt: Union[str, Any]) -> str:
+    def _call(prompt: str | Any) -> str:
         import json
         import urllib.request
 
@@ -227,8 +238,8 @@ def ollama_callback(
                 pass
             # Fallback: NDJSON — aggregate non-empty content chunks
             chunks: list[str] = []
-            for line in text.splitlines():
-                line = line.strip()
+            for raw_line in text.splitlines():
+                line = raw_line.strip()
                 if not line:
                     continue
                 try:
@@ -261,18 +272,21 @@ def ollama_callback(
                 "stream": False,
             }).encode("utf-8"), f"{resolved_url}/api/generate"
 
-        last_exc: Optional[Exception] = None
+        last_exc: Exception | None = None
         for attempt in range(max_retries + 1):
             try:
                 payload, endpoint = _build_payload()
-                req = urllib.request.Request(
+                # S310 on both lines: `endpoint` is built from resolved_url,
+                # whose scheme is checked against http/https at callback-creation
+                # time above, so file:/ftp: cannot reach here.
+                req = urllib.request.Request(  # noqa: S310
                     endpoint,
                     data=payload,
                     headers={"Content-Type": "application/json"},
                 )
                 # Use a generous timeout: CPU-only inference can take 60-180s.
                 # The LLMBridge._timed_call() enforces the tier-level deadline.
-                with urllib.request.urlopen(req, timeout=300) as resp:
+                with urllib.request.urlopen(req, timeout=300) as resp:  # noqa: S310
                     raw = resp.read()
                 response_text = _parse_response(raw)
                 if response_text:
@@ -294,7 +308,7 @@ def ollama_callback(
 
 def grok_callback(
     model: str = "grok-3",
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
 ) -> LLMCallback:
     """Create a callback that uses xAI Grok via OpenAI-compatible API.
 
@@ -314,7 +328,7 @@ def grok_callback(
 
 def kimi_callback(
     model: str = "moonshot-v1-128k",
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
 ) -> LLMCallback:
     """Create a callback that uses Moonshot Kimi via OpenAI-compatible API.
 
@@ -334,7 +348,7 @@ def kimi_callback(
 
 def minimax_callback(
     model: str = "MiniMax-Text-01",
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
 ) -> LLMCallback:
     """Create a callback that uses MiniMax via OpenAI-compatible API.
 
@@ -354,7 +368,7 @@ def minimax_callback(
 
 def nvidia_callback(
     model: str = "meta/llama-3.1-70b-instruct",
-    api_key: Optional[str] = None,
+    api_key: str | None = None,
 ) -> LLMCallback:
     """Create a callback that uses NVIDIA NIM via OpenAI-compatible API.
 
@@ -401,7 +415,7 @@ def claude_agent_sdk_callback(
     import shutil
     import subprocess
 
-    def _call(prompt: Union[str, Any]) -> str:
+    def _call(prompt: str | Any) -> str:
         claude_bin = shutil.which("claude")
         if not claude_bin:
             raise RuntimeError(
@@ -423,11 +437,17 @@ def claude_agent_sdk_callback(
             text_prompt,
         ]
 
-        result = subprocess.run(
+        # S603: the executable is resolved by shutil.which("claude"), not taken
+        # from caller input, and the argument list is passed without a shell, so
+        # the prompt cannot break out into a command.
+        # check=False is deliberate: returncode is inspected below so the CLI's
+        # own stderr can be surfaced instead of a bare CalledProcessError.
+        result = subprocess.run(  # noqa: S603
             cmd,
             capture_output=True,
             text=True,
             timeout=120,
+            check=False,
         )
 
         if result.returncode != 0:
@@ -455,7 +475,7 @@ def passthrough_callback() -> LLMCallback:
     return _call
 
 
-def auto_callback() -> Optional[LLMCallback]:
+def auto_callback() -> LLMCallback | None:
     """Auto-detect the best available LLM callback.
 
     Checks in order:
@@ -517,9 +537,13 @@ def auto_callback() -> Optional[LLMCallback]:
     try:
         import urllib.request
         req = urllib.request.Request("http://localhost:11434/api/tags")
-        with urllib.request.urlopen(req, timeout=2):
+        # S310: fixed literal http:// loopback probe, no caller input involved.
+        with urllib.request.urlopen(req, timeout=2):  # noqa: S310
             return ollama_callback()
-    except Exception:
+    # S110/BLE001: this is a reachability probe. Any failure (refused, DNS,
+    # timeout, bad response) means "no Ollama here", which is not an error
+    # worth logging on a box that simply does not run Ollama.
+    except Exception:  # noqa: BLE001, S110
         pass
 
     return None

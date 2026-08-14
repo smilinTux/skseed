@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger("skseed.integration")
 
@@ -59,11 +59,15 @@ def _get_sdk() -> Any:
     skcapstone into ``sys.modules``.  Tests may still assign the module-level
     ``_sdk`` directly to force a value.
     """
-    global _sdk
+    # PLW0603: _sdk is a module-level memo for a one-shot optional import;
+    # rebinding it is the point of the cache.
+    global _sdk  # noqa: PLW0603
     if _sdk is _UNRESOLVED:
         try:
             from skcapstone import sdk as resolved
-        except Exception:  # ImportError, or a broken partial install
+        # Broad on purpose: a broken partial install of an OPTIONAL sibling
+        # must degrade to native mode, not propagate out of a lazy import.
+        except Exception:  # noqa: BLE001
             resolved = None
         _sdk = resolved
     return _sdk
@@ -92,7 +96,9 @@ def is_present() -> bool:
         return False
     try:
         return bool(sdk.is_available())
-    except Exception as exc:  # pragma: no cover - defensive
+    # Broad on purpose: this is the optional-skcapstone boundary, and a
+    # failure here must fall back to native mode rather than break the caller.
+    except Exception as exc:  # noqa: BLE001  # pragma: no cover - defensive
         logger.debug("skcapstone present-check failed: %s", exc)
         return False
 
@@ -127,7 +133,8 @@ def alert(event: str, payload: dict[str, Any], level: str = "info") -> bool:
                     notify=level in _NOTIFY_LEVELS,
                 )
             )
-        except Exception as exc:
+        # Broad on purpose: alerting must never break the thing being alerted on.
+        except Exception as exc:  # noqa: BLE001
             logger.warning("sk-alert publish failed, logging locally: %s", exc)
 
     # native fallback — structured log at the matching level
@@ -174,7 +181,9 @@ def ensure_schedule(interval_hours: float = 24.0) -> bool:
             interval_hours,
         )
         return True
-    except Exception as exc:
+    # Broad on purpose: scheduler registration is best-effort; the native
+    # timer remains the cadence mechanism when it fails.
+    except Exception as exc:  # noqa: BLE001
         logger.warning("ensure_schedule failed (using native): %s", exc)
         return False
 
@@ -186,12 +195,14 @@ def unregister_schedule() -> bool:
         return False
     try:
         return bool(sdk.unregister_job(SWEEP_JOB))
-    except Exception as exc:  # pragma: no cover - defensive
+    # Broad on purpose: this is the optional-skcapstone boundary, and a
+    # failure here must fall back to native mode rather than break the caller.
+    except Exception as exc:  # noqa: BLE001  # pragma: no cover - defensive
         logger.debug("unregister_schedule failed: %s", exc)
         return False
 
 
-def register_self(pid_file: Optional[str] = None) -> bool:
+def register_self(pid_file: str | None = None) -> bool:
     """Advertise skseed to skcapstone's discovery registry, if present.
 
     skseed is a pure kernel library (no daemon / pid file) — the pid_file
@@ -212,6 +223,8 @@ def register_self(pid_file: Optional[str] = None) -> bool:
             pid_file=pid_file or str(Path("~/.skseed/daemon.pid").expanduser()),
         )
         return True
-    except Exception as exc:  # pragma: no cover - defensive
+    # Broad on purpose: this is the optional-skcapstone boundary, and a
+    # failure here must fall back to native mode rather than break the caller.
+    except Exception as exc:  # noqa: BLE001  # pragma: no cover - defensive
         logger.debug("register_self failed: %s", exc)
         return False

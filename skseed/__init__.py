@@ -34,6 +34,14 @@ from .alignment import AlignmentStore
 from .audit import Auditor
 from .collider import Collider
 from .framework import SeedFramework, get_default_framework, load_seed_framework
+from .llm import (
+    anthropic_callback,
+    auto_callback,
+    minimax_callback,
+    ollama_callback,
+    openai_callback,
+    passthrough_callback,
+)
 from .models import (
     AlignmentRecord,
     AlignmentStatus,
@@ -48,7 +56,6 @@ from .models import (
     SteelManResult,
     TruthGrade,
 )
-from .llm import anthropic_callback, auto_callback, minimax_callback, ollama_callback, openai_callback, passthrough_callback
 from .philosopher import Philosopher
 
 __all__ = [

@@ -17,10 +17,11 @@ exists so humans can clearly see that both types exist.
 from __future__ import annotations
 
 import json
+import logging
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from .models import (
     AlignmentRecord,
@@ -33,6 +34,8 @@ from .models import (
 )
 
 DEFAULT_ALIGNMENT_DIR = os.path.expanduser("~/.skseed/alignment")
+
+logger = logging.getLogger(__name__)
 
 
 class AlignmentStore:
@@ -66,8 +69,11 @@ class AlignmentStore:
             try:
                 raw = json.loads(self._config_path.read_text(encoding="utf-8"))
                 return SeedConfig(**raw)
-            except Exception:
-                pass
+            except (OSError, ValueError) as exc:
+                logger.warning(
+                    "Unreadable seed config at %s, falling back to defaults: %s",
+                    self._config_path, exc,
+                )
         return SeedConfig()
 
     def save_config(self, config: SeedConfig) -> None:
@@ -92,7 +98,7 @@ class AlignmentStore:
         path.write_text(belief.model_dump_json(indent=2), encoding="utf-8")
         return belief.id
 
-    def get_belief(self, belief_id: str) -> Optional[Belief]:
+    def get_belief(self, belief_id: str) -> Belief | None:
         """Retrieve a belief by ID, searching all stores."""
         for source_dir in self._dirs.values():
             path = source_dir / f"{belief_id}.json"
@@ -102,10 +108,10 @@ class AlignmentStore:
 
     def list_beliefs(
         self,
-        source: Optional[BeliefSource] = None,
-        status: Optional[AlignmentStatus] = None,
-        domain: Optional[str] = None,
-        misalignment_type: Optional[MisalignmentType] = None,
+        source: BeliefSource | None = None,
+        status: AlignmentStatus | None = None,
+        domain: str | None = None,
+        misalignment_type: MisalignmentType | None = None,
     ) -> list[Belief]:
         """List beliefs with optional filters.
 
@@ -134,7 +140,8 @@ class AlignmentStore:
                     if misalignment_type and b.misalignment_type != misalignment_type:
                         continue
                     beliefs.append(b)
-                except Exception:
+                except (OSError, ValueError) as exc:
+                    logger.warning("Skipping unreadable belief %s: %s", path, exc)
                     continue
 
         return beliefs
@@ -159,7 +166,7 @@ class AlignmentStore:
         self,
         belief: Belief,
         result: SteelManResult,
-        config: Optional[SeedConfig] = None,
+        config: SeedConfig | None = None,
         triggered_by: str = "manual",
     ) -> AlignmentRecord:
         """Record the result of running a belief through the collider.
@@ -250,7 +257,8 @@ class AlignmentStore:
                 issue = json.loads(path.read_text(encoding="utf-8"))
                 if issue.get("status") == status:
                     issues.append(issue)
-            except Exception:
+            except (OSError, ValueError) as exc:
+                logger.warning("Skipping unreadable issue %s: %s", path, exc)
                 continue
         return issues
 
@@ -292,7 +300,7 @@ class AlignmentStore:
     # ── Three-Way Comparison ───────────────────────────────
 
     def compare_beliefs(
-        self, domain: Optional[str] = None
+        self, domain: str | None = None
     ) -> dict[str, list[str]]:
         """Compare beliefs across all three stores for a domain.
 
@@ -341,7 +349,8 @@ class AlignmentStore:
                     path.read_text(encoding="utf-8")
                 )
                 records.append(r)
-            except Exception:
+            except (OSError, ValueError) as exc:
+                logger.warning("Skipping unreadable alignment record %s: %s", path, exc)
                 continue
 
         return records
@@ -369,6 +378,7 @@ class AlignmentStore:
                         "status": raw.get("new_status"),
                         "triggered_by": raw.get("triggered_by"),
                     })
-            except Exception:
+            except (OSError, ValueError) as exc:
+                logger.warning("Skipping unreadable ledger entry %s: %s", path, exc)
                 continue
         return records

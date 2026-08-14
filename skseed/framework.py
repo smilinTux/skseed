@@ -12,13 +12,16 @@ https://github.com/neuresthetics/seed
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 DEFAULT_SEED_PATH = os.path.expanduser("~/.skseed/seed.json")
+
+logger = logging.getLogger(__name__)
 
 
 class SeedFramework(BaseModel):
@@ -233,7 +236,7 @@ Engage with this topic. At the end of your exploration, extract:
 - OPEN QUESTIONS: what remains unresolved and worth future exploration"""
 
 
-def load_seed_framework(path: str = DEFAULT_SEED_PATH) -> Optional[SeedFramework]:
+def load_seed_framework(path: str = DEFAULT_SEED_PATH) -> SeedFramework | None:
     """Load the seed framework from a JSON file.
 
     Args:
@@ -259,7 +262,12 @@ def load_seed_framework(path: str = DEFAULT_SEED_PATH) -> Optional[SeedFramework
             definitions=fw.get("definitions", []),
             principles=fw.get("principles", []),
         )
-    except (json.JSONDecodeError, Exception):
+    except (OSError, ValueError) as exc:
+        # Was `except (json.JSONDecodeError, Exception)`, which reads as narrow
+        # but is not: JSONDecodeError is a subclass of Exception, so the tuple
+        # caught everything and returned None silently. OSError covers the read,
+        # ValueError covers both JSONDecodeError and pydantic ValidationError.
+        logger.warning("Could not load seed framework from %s: %s", filepath, exc)
         return None
 
 
@@ -290,7 +298,7 @@ def install_seed_framework(
     return str(dst)
 
 
-def _bundled_seed_path() -> Optional[str]:
+def _bundled_seed_path() -> str | None:
     """Get the path to the bundled seed.json shipped with the package."""
     here = Path(__file__).parent / "data" / "seed.json"
     if here.exists():
