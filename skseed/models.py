@@ -15,10 +15,9 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ── Enums ──────────────────────────────────────────────────
 
@@ -170,23 +169,23 @@ class Belief(BaseModel):
     tags: list[str] = Field(default_factory=list)
 
     alignment_status: AlignmentStatus = Field(default=AlignmentStatus.PENDING)
-    misalignment_type: Optional[MisalignmentType] = Field(
+    misalignment_type: MisalignmentType | None = Field(
         default=None,
         description="Set when misaligned — truth or moral",
     )
-    coherence_score: Optional[float] = Field(
+    coherence_score: float | None = Field(
         default=None,
         ge=0.0,
         le=1.0,
         description="Last collider score",
     )
-    truth_grade: Optional[TruthGrade] = Field(default=None)
+    truth_grade: TruthGrade | None = Field(default=None)
 
-    collider_result_id: Optional[str] = Field(
+    collider_result_id: str | None = Field(
         default=None,
         description="ID of the SteelManResult that evaluated this belief",
     )
-    memory_id: Optional[str] = Field(
+    memory_id: str | None = Field(
         default=None,
         description="Link back to skmemory Memory ID if extracted from memory",
     )
@@ -210,7 +209,7 @@ class AlignmentRecord(BaseModel):
     collider_result_id: str = Field(description="The collider result")
     previous_status: AlignmentStatus = Field(description="Status before this evaluation")
     new_status: AlignmentStatus = Field(description="Status after this evaluation")
-    coherence_delta: Optional[float] = Field(
+    coherence_delta: float | None = Field(
         default=None,
         description="Change in coherence from previous evaluation",
     )
@@ -413,7 +412,7 @@ class SeedConfig(BaseModel):
         default=False,
         description="Never auto-resolve — always flag for discussion",
     )
-    framework_path: Optional[str] = Field(
+    framework_path: str | None = Field(
         default=None,
         description="Custom path to seed.json (None = bundled default)",
     )

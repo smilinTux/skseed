@@ -215,13 +215,28 @@ class TestOllamaCallback:
         assert result == ""
 
 
+# auto_callback() consults six provider env vars, and grok/kimi/minimax/nvidia
+# are all built on openai_callback. Clearing only ANTHROPIC + OPENAI left the
+# other four live, so on a developer box with XAI_API_KEY or NVIDIA_API_KEY set
+# the "no credentials" tests got an openai_callback back and failed. These tests
+# passed in CI only because a public runner happens to have none of them set.
+_PROVIDER_KEYS = (
+    "ANTHROPIC_API_KEY",
+    "XAI_API_KEY",
+    "MOONSHOT_API_KEY",
+    "MINIMAX_API_KEY",
+    "NVIDIA_API_KEY",
+    "OPENAI_API_KEY",
+)
+
+
 class TestAutoCallback:
     """Tests for auto_callback — auto-detects best available LLM."""
 
     def test_returns_none_when_no_credentials_no_ollama(self, monkeypatch):
         """Returns None when no API keys and no Ollama running."""
-        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        for _k in _PROVIDER_KEYS:
+            monkeypatch.delenv(_k, raising=False)
 
         with patch("urllib.request.urlopen", side_effect=Exception("Connection refused")):
             result = auto_callback()
@@ -276,8 +291,8 @@ class TestAutoCallback:
 
     def test_skips_ollama_when_connection_refused(self, monkeypatch):
         """Returns None when Ollama connection is refused."""
-        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        for _k in _PROVIDER_KEYS:
+            monkeypatch.delenv(_k, raising=False)
 
         import urllib.error
         with patch("urllib.request.urlopen", side_effect=urllib.error.URLError("refused")):

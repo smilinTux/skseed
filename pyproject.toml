@@ -42,7 +42,10 @@ memory = [
 skcapstone = ["skcapstone>=0.6.8"]
 dev = [
     "pytest>=7.0",
-    "ruff>=0.1",
+    # Bounded: an unbounded `ruff>=0.1` let a minor release change the rule set
+    # under CI and turn a green gate red on its own. [tool.ruff.lint] pins the
+    # rules; this pins the engine that reads them.
+    "ruff>=0.15,<0.17",
     "black>=23.0",
 ]
 
@@ -60,6 +63,33 @@ include = ["skseed*"]
 
 [tool.setuptools.package-data]
 skseed = ["data/*.json", "data/*.yaml"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 99
+
+[tool.ruff.lint]
+# Selected EXPLICITLY on purpose. With no config, `ruff check` uses ruff's own
+# default rule set, which is not stable across releases: the dev extra asked
+# for `ruff>=0.1`, so CI silently picked up 0.16, whose defaults added UP/BLE.
+# The gate went from passing to 59 errors, then to 73, with no change to this
+# repo. An explicit select makes the gate a property of the repo instead, and
+# 0.15 and 0.16 now report identically.
+select = [
+    "E4", "E7", "E9",  # pycodestyle (ruff's own default subset)
+    "F",               # pyflakes
+    "I",               # import sorting
+    "UP",              # pyupgrade — requires-python is >=3.10
+    "BLE",             # blind except
+    "S",               # bandit
+    "PIE",
+    "C4",              # comprehensions
+    "PLW",             # pylint warnings
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests legitimately use asserts and throwaway credentials.
+"tests/*" = ["S101", "S105", "S106"]
 
 [tool.black]
 line-length = 99
