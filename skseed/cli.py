@@ -20,6 +20,7 @@ import sys
 
 import click
 
+from . import __version__
 from .alignment import AlignmentStore
 from .audit import Auditor
 from .collider import Collider
@@ -44,7 +45,7 @@ def _make_store() -> AlignmentStore:
 
 
 @click.group()
-@click.version_option(version="0.1.0", prog_name="skseed")
+@click.version_option(version=__version__, prog_name="skseed")
 def main():
     """SKSeed — Sovereign Logic Kernel.
 
