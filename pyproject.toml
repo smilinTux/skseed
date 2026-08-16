@@ -42,10 +42,18 @@ memory = [
 skcapstone = ["skcapstone>=0.6.8"]
 dev = [
     "pytest>=7.0",
-    # Bounded: an unbounded `ruff>=0.1` let a minor release change the rule set
-    # under CI and turn a green gate red on its own. [tool.ruff.lint] pins the
-    # rules; this pins the engine that reads them.
-    "ruff>=0.15,<0.17",
+    # PINNED EXACTLY, not ranged. An unbounded `ruff>=0.1` let a minor release
+    # change the rule set under CI and turn a green gate red on its own; the
+    # follow-up `ruff>=0.15,<0.17` narrowed that but did not close it, because
+    # ruff adds new rules to existing prefixes in patch releases and this repo
+    # selects whole prefixes (S, PLW, UP, PIE, C4). Any unreleased 0.16.x could
+    # therefore still redden the gate with no change to this repo. An exact pin
+    # makes `ruff check` reproducible: the same commit lints the same way today
+    # and in six months. Bumping it is a deliberate, reviewable commit.
+    # [tool.ruff.lint] pins the rules; this pins the engine that reads them.
+    # Guarded by a docs-evidence check in SOP.md so the pin cannot silently
+    # loosen back into a range.
+    "ruff==0.16.3",
     "black>=23.0",
 ]
 
@@ -73,8 +81,10 @@ line-length = 99
 # default rule set, which is not stable across releases: the dev extra asked
 # for `ruff>=0.1`, so CI silently picked up 0.16, whose defaults added UP/BLE.
 # The gate went from passing to 59 errors, then to 73, with no change to this
-# repo. An explicit select makes the gate a property of the repo instead, and
-# 0.15 and 0.16 now report identically.
+# repo. An explicit select makes the gate a property of the repo instead.
+# Verified 2026-08-16 against this select: ruff 0.15.0, 0.15.10, 0.15.22,
+# 0.16.0, 0.16.1, 0.16.2 and 0.16.3 all report 0 findings on skseed/, so the
+# rule set is now a property of this file rather than of the installed engine.
 select = [
     "E4", "E7", "E9",  # pycodestyle (ruff's own default subset)
     "F",               # pyflakes
