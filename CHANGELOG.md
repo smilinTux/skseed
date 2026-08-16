@@ -24,8 +24,30 @@ tags were cut out of version order, noted inline.
   entry point, the `~/.skseed` path constants, the absence of any network bind, the
   absence of a `status`/`doctor`/`health` verb, and both unconditional CI gate lines.
 
+### Changed
+
+- **The ruff lint gate is now pinned exactly, not ranged.** The dev extra went from
+  `ruff>=0.15,<0.17` to `ruff==0.16.3`. The explicit `[tool.ruff.lint] select` already
+  stopped ruff's *default* rule set from drifting into the gate, but it did not stop ruff
+  from adding *new* rules to the whole prefixes this repo selects (`S`, `PLW`, `UP`,
+  `PIE`, `C4`) in a patch release, which would still redden CI with no change to this
+  repo. Verified 2026-08-16 that ruff 0.15.0, 0.15.10, 0.15.22, 0.16.0, 0.16.1, 0.16.2
+  and 0.16.3 all report 0 findings on `skseed/` against this `select`; the pin exists so
+  an unreleased 0.16.x cannot change that answer without a reviewable commit.
+
+### Added
+
+- Three `docs-evidence` checks that guard the lint gate itself: ruff is pinned with `==`
+  and not a range, ruff is installed only through the dev extra (no bare
+  `pip install ruff` in any workflow, which is how the original drift got in), and the
+  rule set is selected explicitly rather than inherited from ruff's defaults. All three
+  were negative-controlled: each fails when its fact is made untrue.
+
 ### Documented (no code change)
 
+- Section 4 of `SOP.md` now records both halves of the drift trap (implicit `select` vs
+  unpinned engine) and the procedure for bumping the pin.
+- Corrected four stale `pyproject.toml:NN` line citations in `SOP.md`.
 - The `publish.yml` test job runs `pytest ... || true` and `publish-pypi` is
   `needs: test` with `if: always()`, so a tag publishes to PyPI regardless of test
   results. `ci.yml` on the pull request is the only real gate.

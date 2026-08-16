@@ -23,7 +23,7 @@ A dual-published library. The same repo ships:
 
 | Artifact | Registry | Built from | Entry point |
 |---|---|---|---|
-| `skseed` | PyPI | `skseed/` (setuptools) | console script `skseed = "skseed.cli:main"` (pyproject.toml:50) |
+| `skseed` | PyPI | `skseed/` (setuptools) | console script `skseed = "skseed.cli:main"` (pyproject.toml:61) |
 | `@smilintux/skseed` | npm | `src/index.ts` compiled by `tsc` per tsconfig.json | `dist/index.js` / `dist/index.esm.js` / `dist/index.d.ts` (package.json) |
 
 The two are not peers in scope. The Python package is the whole kernel (collider, audit,
@@ -156,7 +156,7 @@ Requires Python >= 3.10 (pyproject.toml:15). Runtime dependencies are `pydantic>
 ```bash
 git clone https://github.com/smilinTux/skseed
 cd skseed
-python -m pip install -e ".[dev]"          # editable + pytest, ruff, black
+python -m pip install -e ".[dev]"          # editable + pytest, ruff==0.16.3, black
 skseed --help                              # console script is on PATH
 ```
 
@@ -210,6 +210,23 @@ Neither `run:` line in ci.yml is suffixed with `|| true`, so both genuinely fail
 The docs-evidence block at the bottom of this file pins those two lines verbatim, which
 means appending `|| true` to either one breaks the docs-check gate as well.
 
+**The lint gate is version-pinned, on purpose.** CI installs ruff exactly once, through
+`pip install -e ".[dev]"` (ci.yml:29); there is no bare `pip install ruff` step that could
+pull a different build on top. The dev extra pins `ruff==0.16.3` (pyproject.toml:56), and
+`[tool.ruff.lint] select` (pyproject.toml:88) names the rule set explicitly instead of
+inheriting ruff's own defaults. Both halves are needed:
+
+| Left implicit | What drifts | Symptom |
+|---|---|---|
+| `select` (use ruff defaults) | ruff changes its *default* rule set between minors | Gate reddens with no repo change |
+| ruff version (`>=0.15,<0.17`) | ruff adds *new rules to selected prefixes* (`S`, `PLW`, `UP`, `PIE`, `C4`) in patch releases | Gate reddens with no repo change |
+
+Verified 2026-08-16: ruff 0.15.0, 0.15.10, 0.15.22, 0.16.0, 0.16.1, 0.16.2 and 0.16.3 all
+report 0 findings on `skseed/` against this `select`. The pin exists so that an
+*unreleased* 0.16.x cannot change that answer without a reviewable commit. To move it,
+bump the pin and rerun the gate in the same PR. The docs-evidence block below asserts the
+pin is an `==`, so loosening it back into a range fails docs-check.
+
 Run it locally exactly as CI does:
 
 ```bash
@@ -218,7 +235,9 @@ ruff check skseed/
 npm run build
 ```
 
-As of 2026-08-14 that is 271 passing tests across 12 test modules, and `ruff check
+As of 2026-08-16 that is 271 collected tests across 12 test modules: 267 pass and 4 skip.
+The 4 skips are `tests/test_integration_adapter.py` cases guarded on `skcapstone` being
+importable; the dev extra does not install it, so they skip in CI too. `ruff check
 skseed/` reports "All checks passed!".
 
 ### Known local-only failure
@@ -515,7 +534,7 @@ subpath export. There is no JS implementation of the collider.
 |---|---|
 | `skseed --version` prints a version that is not what you installed | Expected: `skseed/cli.py:47` hardcodes `version="0.1.0"` in `@click.version_option`. The authoritative answer is `python -c "from importlib.metadata import version; print(version('skseed'))"`. See section 9. |
 | Two different versions reported by `skseed --version` and `python -c "import skseed; print(skseed.__version__)"` | Same cause. `skseed.__version__` goes through `skseed/_ver.py:detect_version()` (importlib.metadata, then the setuptools-scm `_version.py`, then `0.0.0+unknown`) and is correct; the CLI literal is not. |
-| Version resolves to `0.0.0+unknown` | The package is not installed, or it was built from a checkout with no tags. Re-checkout with `fetch-depth: 0` and `fetch-tags: true`, or `pip install -e .`. `fallback_version` in pyproject.toml:75 is deliberately not a plausible number. |
+| Version resolves to `0.0.0+unknown` | The package is not installed, or it was built from a checkout with no tags. Re-checkout with `fetch-depth: 0` and `fetch-tags: true`, or `pip install -e .`. `fallback_version` in pyproject.toml:115 is deliberately not a plausible number. |
 | `twine upload` fails with a bare HTTP 400 on a tag build | That version already exists on PyPI. Never hardcode the version in pyproject.toml; it is `dynamic` for exactly this reason (pyproject.toml:7 to 11). Cut a new patch tag. |
 | `npm publish` fails, or ships a version that does not match the tag | `package.json` "version" is a hardcoded literal and the npm workflow publishes it verbatim. Bump it to match the tag before tagging. See section 5. |
 | A tagged release published despite failing tests | Expected, and a known defect: `publish.yml:29` ends in `\|\| true` and `publish.yml:33` is `if: always()`. The real gate is `ci.yml` on the PR. Never treat a green tag run as a green test suite. |
@@ -619,7 +638,7 @@ from the repository:
 Part of the **[SKWorld](https://skworld.io)** sovereign ecosystem · 🐧 smilinTux
 
 <!-- docs-evidence
-verified: 2026-08-14
+verified: 2026-08-16
 checks:
   - name: console script entry point is skseed.cli:main
     run: grep -qxF 'skseed = "skseed.cli:main"' pyproject.toml
@@ -641,6 +660,12 @@ checks:
     run: grep -qxF '      - run: python -m pytest tests/ -v --tb=short' .github/workflows/ci.yml
   - name: CI ruff gate is unconditional (appending || true breaks this check)
     run: grep -qxF '      - run: ruff check skseed/' .github/workflows/ci.yml
+  - name: ruff is pinned to an exact version, never a range (section 4)
+    run: grep -qxF '    "ruff==0.16.3",' pyproject.toml
+  - name: ruff is installed only via the dev extra, never a bare pip install
+    run: test -d .github/workflows && ! grep -rqE 'pip install[^|&;]*[ "]ruff' .github/workflows/
+  - name: the ruff rule set is selected explicitly, not inherited from ruff's defaults
+    run: grep -qxF '[tool.ruff.lint]' pyproject.toml && grep -qxF 'select = [' pyproject.toml
   - name: npm package name matches the documented dual-publish target
     run: grep -qF '"name": "@smilintux/skseed"' package.json
 -->
