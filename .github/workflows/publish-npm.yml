@@ -32,6 +32,13 @@ jobs:
       - name: npm 11.5.1 or newer (trusted publishing)
         run: npm install -g npm@^11.5.1
 
+      # npm publishes the literal in package.json, so a tag cut without a manual
+      # bump either failed with E403 (version exists) or shipped the wrong number.
+      # v0.1.9 was tagged while package.json still said 0.1.7. Take the version
+      # from the tag so npm and PyPI cannot diverge again.
+      - name: Sync package.json version from the tag
+        run: npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version
+
       - name: Install dependencies
         run: npm ci --ignore-scripts 2>/dev/null || npm install --ignore-scripts
 

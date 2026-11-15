@@ -288,8 +288,8 @@ flowchart TD
     A2 --> PYPI["PyPI: skseed<br/>version from setuptools-scm = the TAG"]
 
     B --> B1["npm ci --ignore-scripts<br/>npm run build"]
-    B1 --> B2["npm publish --access public"]
-    B2 --> NPM["npm: @smilintux/skseed<br/>version from package.json, NOT the tag"]
+    B1 --> B2["npm version from tag, then<br/>npm publish --provenance --access public"]
+    B2 --> NPM["npm: @smilintux/skseed<br/>version synced from the TAG"]
 
     classDef warn fill:#7a2020,color:#fff,stroke:#4a1010
     class A1,B2 warn
@@ -324,11 +324,12 @@ publish irreversibly.
    the `|| true` and the `always()` defeat the dependency: a fully red test suite still
    uploads to PyPI. The only real gate is `ci.yml` on the pull request that preceded the
    tag. Do not read a green tag run as a green test suite.
-2. **npm publishes `package.json`'s hardcoded version, not the tag.** PyPI gets the tag
-   (setuptools-scm); npm gets whatever literal is in `package.json`. If you forget step 2
-   above, `npm publish` re-attempts an already-published version and fails, or worse,
-   silently ships a version number that does not correspond to the tag. See
-   [section 9](#9-maturity-tier--version-reference) for the current drift.
+2. **The `package.json` literal is overwritten from the tag at publish time.**
+   `publish-npm.yml` runs `npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version` before
+   `npm publish`, so npm and PyPI both get the tag's version. Keep the literal close to the
+   latest tag anyway (step 2 above) so a local `npm pack` is not misleading. Before this
+   step existed, v0.1.9 was tagged while `package.json` said 0.1.7 and the npm publish
+   failed.
 
 ### Rollback
 
@@ -536,7 +537,8 @@ subpath export. There is no JS implementation of the collider.
 | Two different versions reported by `skseed --version` and `python -c "import skseed; print(skseed.__version__)"` | Same cause. `skseed.__version__` goes through `skseed/_ver.py:detect_version()` (importlib.metadata, then the setuptools-scm `_version.py`, then `0.0.0+unknown`) and is correct; the CLI literal is not. |
 | Version resolves to `0.0.0+unknown` | The package is not installed, or it was built from a checkout with no tags. Re-checkout with `fetch-depth: 0` and `fetch-tags: true`, or `pip install -e .`. `fallback_version` in pyproject.toml:115 is deliberately not a plausible number. |
 | `twine upload` fails with a bare HTTP 400 on a tag build | That version already exists on PyPI. Never hardcode the version in pyproject.toml; it is `dynamic` for exactly this reason (pyproject.toml:7 to 11). Cut a new patch tag. |
-| `npm publish` fails, or ships a version that does not match the tag | `package.json` "version" is a hardcoded literal and the npm workflow publishes it verbatim. Bump it to match the tag before tagging. See section 5. |
+| `npm publish` fails with E404 | npm trusted publisher missing or mismatched on npmjs.com: owner `smilinTux`, repository `skseed`, workflow `publish-npm.yml`, environment blank. |
+| `npm publish` fails with E403 "cannot publish over the previously published version" | That tag's version already exists on npm. Cut a new tag; the version comes from the tag. |
 | A tagged release published despite failing tests | Expected, and a known defect: `publish.yml:29` ends in `\|\| true` and `publish.yml:33` is `if: always()`. The real gate is `ci.yml` on the PR. Never treat a green tag run as a green test suite. |
 | `test_returns_none_when_no_credentials_no_ollama` fails locally but passes in CI | Your shell exports one of `XAI_API_KEY`, `MOONSHOT_API_KEY`, `MINIMAX_API_KEY`, or `NVIDIA_API_KEY`; the test only clears `ANTHROPIC_API_KEY` and `OPENAI_API_KEY`. Re-run under the `env -u ...` line in section 4. Repo-side fix is a code follow-up. |
 | `skseed collide` prints a prompt instead of a result | No LLM callback resolved. `Collider.can_execute` is False. Export a provider key, start Ollama, or feed the printed prompt to any model by hand. This is designed behaviour, not an error. |
@@ -588,7 +590,7 @@ python -c "from importlib.metadata import version; print(version('skseed'))"   #
 | `importlib.metadata.version("skseed")` | What is actually installed in the active environment | **Authoritative for "what am I running"** |
 | `skseed.__version__` | `skseed/_ver.py:detect_version()`: importlib.metadata, then the build-time `skseed/_version.py`, then `0.0.0+unknown` | Correct. Tracks the installed distribution |
 | `pyproject.toml:11` | `dynamic = ["version"]`, with an inline comment recording the sksecurity incident that a hardcoded version caused | Correct by construction. Do not replace it with a literal |
-| `package.json:3` | A hardcoded literal, published verbatim by `publish-npm.yml` | ⚠️ **Drifts.** Behind the newest git tag at the time of writing. Bump it manually before tagging |
+| `package.json:3` | A literal that `publish-npm.yml` overwrites from the tag before publishing | Correct at publish time. The checked-in literal can lag the tag; bump it when convenient |
 | `skseed/cli.py:47` | `@click.version_option(version="0.1.0")`, a hardcoded literal | ⚠️ **Drifted and wrong.** `skseed --version` does not reflect the installed version |
 | `skill.yaml:2` | `version: 0.1.0`, the SKSkills manifest's own version field | Independent of the package version; not a release number |
 
@@ -601,10 +603,9 @@ a tag publishes:
 1. `skseed/cli.py:47` should read the resolved version instead of `"0.1.0"`, for example
    `@click.version_option(version=__version__, prog_name="skseed")` importing from
    `skseed`. Until then `skseed --version` is misinformation.
-2. `package.json:3` should be synchronized from the tag in `publish-npm.yml` (for example
-   `npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version --allow-same-version` before
-   `npm publish`) so npm and PyPI cannot diverge. Until then it is a manual pre-tag step,
-   documented in section 5.
+2. ~~`package.json:3` should be synchronized from the tag in `publish-npm.yml`.~~ Done:
+   `publish-npm.yml` now runs `npm version "${GITHUB_REF_NAME#v}" --no-git-tag-version
+   --allow-same-version` before `npm publish`.
 
 `skseed/__init__.py` is **not** part of this problem; it was already fixed to resolve the
 version dynamically through `skseed/_ver.py`.
