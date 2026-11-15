@@ -15,6 +15,14 @@ tags were cut out of version order, noted inline.
 
 ## [Unreleased]
 
+### Fixed
+
+- **npm version now comes from the tag.** `v0.1.9` was tagged while `package.json` still
+  said `0.1.7` (already on npm), so the npm publish could never succeed. `package.json`
+  is bumped to `0.1.10` and `publish-npm.yml` runs `npm version "${GITHUB_REF_NAME#v}"
+  --no-git-tag-version --allow-same-version` before `npm publish`, so the two cannot
+  diverge again. Tag `v0.1.10` to publish.
+
 ### Added
 
 - `SOP.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and this
